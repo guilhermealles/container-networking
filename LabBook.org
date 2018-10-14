@@ -20,3 +20,31 @@ described in Rad Jain's "/The Art of Computer System Performance
 Analysis/", I will be able to derive a clear, reproducible workload
 that provides information on how much the virtualization of the
 network stack affects network performance.
+* Systems to be tested
+This performance analysis relates to the virtualization of the network
+stack through the usage of Linux Containers. The two basic systems to
+be tested, thus, are the native environment (which will be used as a
+baseline) and a virtual environment created using Docker. The
+environments are described in more detail in the following
+subsections.
+
+Each of the systems will be tested independently, with a workload that will be defined in following sections.
+
+Since we are considering HPC applications (because that is the focus
+of the original work), the most important metric to be measured is the
+network latency. Network latency, in this context, is defined as the
+round-trip time of a MPI message.
+** System 1: native environment
+In this system, the MPI application will be run in the native Linux
+environment (distribution is still to be decided). There will be
+multiple physical machines spawning MPI processes, which will be
+connected through the physical network.
+** System 2: Docker environtment
+In this system, the MPI application will run on top of Docker containers. The containers will be connected through an overlay network so that they can be distributed onto multiple physical machines. Each MPI process is supposed to run on its separate Docker container.
+* Misc - Ideas
+** Docker swarm vs Docker overlay network
+One possible idea to make this work richer is to test not only the two
+systems described above, but also to test the Docker containers
+connected through the overlay network *without* Docker Swarm. This
+would isolate yet another variable, as well as also providing insights
+on how introducing Docker Swarm affects network performance.
