@@ -1,0 +1,22 @@
+#+TITLE: Container Networking LabBook
+#+AUTHOR: Guilherme Rezende Alles
+#+STARTUP: overview indent
+
+* Introduction
+This repository contains experiments for the course of Computer System
+Performance Analysis (CMP223). I will be documenting the experimental
+process in this LabBook.
+* Objectives
+The objective of this work is to evaluate the network overhead
+introduced by applying container technologies to high-performance
+computing (HPC) applications. This work is built as a follow up to
+/"Assessing the Computation and Communication Overhead of Linux
+Containers for HPC Applications"/, which indicate that network
+overhead do exist and needs to be studied more closely, especially
+with respect to Docker containers.
+
+As of results, I expect that, by applying the concepts and techniques
+described in Rad Jain's "/The Art of Computer System Performance
+Analysis/", I will be able to derive a clear, reproducible workload
+that provides information on how much the virtualization of the
+network stack affects network performance.
