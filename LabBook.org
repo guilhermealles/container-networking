@@ -94,3 +94,43 @@ used to customize the behaviour of the benchmarking system. Here are
 some:
  - /--nb-runs/ sets the number of replications in each test run
  - /--sizeFile/ specifies the input file containing the order and size of messages to be taken in consideration. There is an example file in the main repository, called /zoo_sizes/
+* Experimental design
+I will use a full-factorial experimental design to cover all possible
+outcomes for this experiments.
+** Factors
+The factors to be used, at least for now, are listed in the following
+subsections. For each subsection, I will explain a little bit on the
+levels that I expect to implement.
+*** Message size
+The message size variation can be done through the command line
+arguments accepted by the /platform calibration/ benchmark. Thinking
+about levels, I believe they should be somewhat similar to what is
+seen in an HPC application footprint, which communicates data in sizes
+that are multiple to 4 bytes. To get a fairly comprehensive analysis,
+I think we could do values from 4B to 1GB, in increments of 4B. Even
+though this is a fairly extensive level extension, I believe this
+choice should give us a fair understanding of the many possibilities
+that exist when designing communication strategies for HPC
+applications.
+
+The following code should generate all the levels for the message size
+factor.
+
+#+BEGIN_SRC R :session r :exports both
+gigabyte <- 1024*1024*1024
+seq(4, gigabyte, 4)
+#+END_SRC
+
+*** Execution environment
+The benchmark execution environment is another factor. It will be varied between the virtualized and native environment. 
+
+The virtualized environment to be tested is Docker, with a virtualized network stack connecting containers through a Docker Swarm orchestrator. The orchestrator, in this case, is necessary in order for the containers to be acessible through MPI.
+
+The native environment will be a traditional cluster running MPI jobs.
+
+** Replications
+I still need to figure out how many replications would be enough for these experiments. In order to do that, I need to see how long does it take do execute one batch of testing.
+
+The bare minimum, in my understanding, is around 30 replications. Less than that will probably yield too much variability for the results to be considered consistent.
+
+Additionally, my goal is to present confidence intervals of 95~99% for the observations.
