@@ -41,6 +41,121 @@ multiple physical machines spawning MPI processes, which will be
 connected through the physical network.
 ** System 2: Docker environtment
 In this system, the MPI application will run on top of Docker containers. The containers will be connected through an overlay network so that they can be distributed onto multiple physical machines. Each MPI process is supposed to run on its separate Docker container.
+* Workload
+The objective of this study is to measure the overhead that is
+introduced by container technologies in an HPC infrastructure. More
+specifically, so, I want to measure the networking performance of the
+platform in which HPC applications will be executed in the future,
+/without having to assume any specific application/.
+
+By using the /platform calibration/ as the workload for my
+experiments, I expect to be able to obtain timings that are as close
+to the real world as possible. Executing them on both native and
+virtualized environments should give me enough information to work
+with in this project.
+
+With this restriction and objectives in mind, I believe my best
+approach is to use the [[https://gitlab.inria.fr/simgrid/platform-calibration/tree/master][platform calibration]] project, which is used to
+obtain network metrics that can be used in the configuration of a
+[[http://simgrid.gforge.inria.fr/][SimGrid]] environment. SimGrid is a tool that is used to simulate the
+execution of applications in computer clusters (it also includes SMPI,
+which is an implementation of MPI designed for network
+simulations). The SimGrid and SMPI platforms were introduced to me by
+prof. Lucas Schnorr, in the /Introduction to High-Performance
+Computing/ course.
+** Profiled operations
+The /platform calibration/ project profiles some common MPI operations
+with the objective of providing a *network performance profile* of the
+platform in which it executes. It does so by exchanging messages
+between the MPI nodes involved in the cluster, while measuring the
+time each operation takes to execute using the clock of the local
+node.
+
+The operations that are profiled by this workload are the following:
+ - *Blocking Receive*, which is basically the time spend inside the /MPI_Recv/ function;
+ - *Asynchronous Send*, which is the time spend inside the /MPI_Isend/
+   function;
+ - *Ping-Pong*, which is the classic networking benchmark. It measures the time spent to execute a sequence of an /MPI_Send/ and an /MPI_Recv/;
+ - *Other operations*, which are basically network-unrelated tests
+   contained in the same package. These cover the functions
+   /MPI_Test/, /MPI_Iprobe/ and /MPI_Wtime/.
+** Hardware and Software overheads
+The first two operations to be tested (blocking receive and
+asynchronous send), when put into perspective, represent the software
+overhead of our virtualized and native solutions.
+*** Software overhead
+Since the timing of the blocking receive operation is only measured when the message is actually ready to be received, the output from this measurement does not include any network latency introduced by the infrastructure.
+
+On the same note, for the Asynchronous send, the control returns to
+the caller as soon as everything has been set up for transmission,
+cutting the control /before/ the message actually hits any hardware
+infrastructure.
+
+Since the virtualization of the network stack is still a software
+concern, I still believe these measurements are relevant for
+performance metrics regarding network communication on containers.
+*** Hardware overhead
+The Ping-Pong benchmark is way easier to understand and accept as a
+valid hardware benchmark. The main aspect here is that the time
+measured between each ping-pong consists of the following series of
+operations:
+ 1. /MPI_Send/ on host 1
+ 2. Network
+ 3. /MPI_Recv/ on host 2
+ 4. /MPI_Send/ on host 2
+ 5. Network
+ 6. /MPI_Recv/ on host 1
+
+I believe that, by subtracting the time observed in the software
+overheads (which should account for items 1, 3, 4 and 6), we should be
+able to obtain the sheer network timing on each tested infrastructure.
+** Utilizing the /platform calibration/ project
+According to the gitlab page, there are some parameters which can be
+used to customize the behaviour of the benchmarking system. Here are
+some:
+ - /--nb-runs/ sets the number of replications in each test run
+ - /--sizeFile/ specifies the input file containing the order and size of messages to be taken in consideration. There is an example file in the main repository, called /zoo_sizes/
+* Experimental design
+I will use a full-factorial experimental design to cover all possible
+outcomes for this experiments.
+** Factors
+The factors to be used, at least for now, are listed in the following
+subsections. For each subsection, I will explain a little bit on the
+levels that I expect to implement.
+*** Message size
+The message size variation can be done through the command line
+arguments accepted by the /platform calibration/ benchmark. Thinking
+about levels, I believe they should be somewhat similar to what is
+seen in an HPC application footprint, which communicates data in sizes
+that are multiple to 4 bytes. To get a fairly comprehensive analysis,
+I think we could do values from 4B to 1GB, in increments of 4B. Even
+though this is a fairly extensive level extension, I believe this
+choice should give us a fair understanding of the many possibilities
+that exist when designing communication strategies for HPC
+applications.
+
+The following code should generate all the levels for the message size
+factor.
+
+#+BEGIN_SRC R :session r :exports both
+gigabyte <- 1024*1024*1024
+seq(4, gigabyte, 4)
+#+END_SRC
+
+*** Execution environment
+The benchmark execution environment is another factor. It will be varied between the virtualized and native environment. 
+
+The virtualized environment to be tested is Docker, with a virtualized network stack connecting containers through a Docker Swarm orchestrator. The orchestrator, in this case, is necessary in order for the containers to be acessible through MPI.
+
+The native environment will be a traditional cluster running MPI jobs.
+
+** Replications
+I still need to figure out how many replications would be enough for these experiments. In order to do that, I need to see how long does it take do execute one batch of testing.
+
+The bare minimum, in my understanding, is around 30 replications. Less than that will probably yield too much variability for the results to be considered consistent.
+
+Additionally, my goal is to present confidence intervals of 95~99% for the observations.
+
 * Docker Swarm
 ** Creating a Docker Swarm
 In order to build the Swarm of containers, I will use the code from
