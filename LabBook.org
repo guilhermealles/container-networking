@@ -168,6 +168,49 @@ Test the creation of containers in the Grid5000 cluster. I will use
 three nodes for this test (and for the final execution as well). One
 will be responsible for dispatching the MPI Jobs and the other two
 will execute them.
+** Creating a cluster with Docker Swarm
+In this section I will describe the steps to create a cluster of
+Docker Containers using Docker Swarm inside the Grid5000
+infrastructure.
+
+My preference is to use Grid5000's =graphene= cluster, because this is
+a fairly large cluster (with around 150 nodes) and, as they are not
+extremely new, the machines are most likely available at any
+time. Also, I already have an image configured with Docker and SSH
+Keys installed, so I will not document this process.
+
+The first thing to do when a set of machines is deployed (with
+=kadeploy3=) is to ssh in each one of them from the one which will be
+the head node. This is to ensure that all the machines in the cluster
+have the =known_hosts= file setup properly and will not prompt the
+user for a fingerprint check during experiments.
+
+Then, in the =container-networking= project directory, we need to edit
+the files that identify the hosts in the cluster. These can be found
+at =config/hosts.txt= and at =setup/swarm_hosts.txt=.
+
+The next step is to edit the swarm configuration file, which can be
+found at =docker-cluster/swarm.conf=.
+
+Moving on, we also need to fix the ssh permissions on the keys that
+will be passed through the Docker containers. These keys are at the
+=docker-cluster/ssh/= directory and can be fixed with =chmod 600
+docker-cluster/ssh/*=.
+
+Finally, the last step is to =docker login=, in order to be able to
+push images to the Docker registry.
+*** Summary
+In a higher level, the steps that we need to take in order to setup
+the cluster are:
+
+ 1. SSH into all the machines in the cluster, to fix the =known_hosts=
+    file;
+ 2. Add the hosts network names in the =config/hosts.txt= and
+    =setup/swarm_hosts.txt= files;
+ 3. Edit the swarm configuration file at =docker-cluster/swarm.conf=;
+ 4. Fix the SSH permissions in the keys that will be passed to Docker
+    containers;
+ 5. =docker login=.
 * Misc - Ideas
 ** Docker swarm vs Docker overlay network
 One possible idea to make this work richer is to test not only the two
