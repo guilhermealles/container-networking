@@ -163,7 +163,7 @@ the =hpc-containers= repository. This code is used to build a swarm of
 docker containers across multiple hosts, and to connect them through
 an overlay network. I have placed the necessary scripts in the
 =swarm/= directory.
-** TODO Test the creation of the containers
+** DONE Test the creation of the containers
 Test the creation of containers in the Grid5000 cluster. I will use
 three nodes for this test (and for the final execution as well). One
 will be responsible for dispatching the MPI Jobs and the other two
@@ -211,6 +211,17 @@ the cluster are:
  4. Fix the SSH permissions in the keys that will be passed to Docker
     containers;
  5. =docker login=.
+** Known issues
+For some reason the containers are not being recognized by the
+=mpi_bootstrap=. It used to work in the past, but right now I do not
+have time to debug this.
+
+As a workaround, I can use =docker network ls= to get the network id
+and then =docker network inspect <network id>= to get the IP addresses
+of the containers that are executing in the node and that are
+connected to the overlay network. This needs to be done for every
+(physical) node in the network, since the =docker network inspect=
+only shows the contaners that are executing in the current node.
 * Misc - Ideas
 ** Docker swarm vs Docker overlay network
 One possible idea to make this work richer is to test not only the two
