@@ -41,6 +41,18 @@ multiple physical machines spawning MPI processes, which will be
 connected through the physical network.
 ** System 2: Docker environtment
 In this system, the MPI application will run on top of Docker containers. The containers will be connected through an overlay network so that they can be distributed onto multiple physical machines. Each MPI process is supposed to run on its separate Docker container.
+* Docker Swarm
+** Creating a Docker Swarm
+In order to build the Swarm of containers, I will use the code from
+the =hpc-containers= repository. This code is used to build a swarm of
+docker containers across multiple hosts, and to connect them through
+an overlay network. I have placed the necessary scripts in the
+=swarm/= directory.
+** TODO Test the creation of the containers
+Test the creation of containers in the Grid5000 cluster. I will use
+three nodes for this test (and for the final execution as well). One
+will be responsible for dispatching the MPI Jobs and the other two
+will execute them.
 * Misc - Ideas
 ** Docker swarm vs Docker overlay network
 One possible idea to make this work richer is to test not only the two
