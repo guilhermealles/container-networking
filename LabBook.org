@@ -222,6 +222,42 @@ of the containers that are executing in the node and that are
 connected to the overlay network. This needs to be done for every
 (physical) node in the network, since the =docker network inspect=
 only shows the contaners that are executing in the current node.
+* Native /platform calibration/ execution
+The objective of this section is to perform a native execution of the
+=calibrate= binary on a couple of nodes. To do that, I'll first clone
+the repository and create some configuration files. Then, I'll connect
+to Grid5000 and apply these changes in order to attempt an execution.
+** Setup
+In order to compile the /platform calibration/ project, I need to
+install some libraries that are not default in my /graphene/ image. I
+can do that with:
+#+BEGIN_SRC sh
+sudo apt-get install -y libxml2-dev libxslt1-dev
+#+END_SRC
+** Customizing files
+*** zoo_sizes
+This file contains the sizes of messages to be sent, one per line. I
+will generate a random sequence of message sizes now.
+
+#+BEGIN_SRC python :session random-numbers :results output :exports both
+import random
+seed = 42
+numbers = []
+for exponent in range(0, 21):
+    for i in range(0, 30):
+        numbers.append(2**exponent)
+random.seed(seed)
+random.shuffle(numbers)
+for i in numbers:
+    print(str(i))
+#+END_SRC
+
+This script generates 30 replications of sizes, puts it into an array
+and reproducibly shuffles it with a seed. I have used it to generate
+[[file:///random-sizes][this file]], which will be the basis for the platform calibration.
+** Execution
+To execute the /platform calibration/, I can simply use one of the
+sbatch scripts provided in the repository.
 * Misc - Ideas
 ** Docker swarm vs Docker overlay network
 One possible idea to make this work richer is to test not only the two
