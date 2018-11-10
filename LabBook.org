@@ -227,15 +227,28 @@ The objective of this section is to perform a native execution of the
 =calibrate= binary on a couple of nodes. To do that, I'll first clone
 the repository and create some configuration files. Then, I'll connect
 to Grid5000 and apply these changes in order to attempt an execution.
+** Clone the repository
+The first step is to clone the /platform calibration/ repository:
+#+BEGIN_SRC sh :session experiment
+cd $HOME
+git clone https://gitlab.inria.fr/simgrid/platform-calibration.git
+#+END_SRC
+
 ** Setup
 In order to compile the /platform calibration/ project, I need to
 install some libraries that are not default in my /graphene/ image. I
 can do that with:
-#+BEGIN_SRC sh
+#+BEGIN_SRC sh :session experiment
 sudo apt-get install -y libxml2-dev libxslt1-dev
 #+END_SRC
-** Customizing files
-*** zoo_sizes
+
+Compiling the source...
+#+BEGIN_SRC sh :session experiment
+cd platform-calibration/src/calibration
+make clean
+make
+#+END_SRC
+** Customizing files*** zoo_sizes
 This file contains the sizes of messages to be sent, one per line. I
 will generate a random sequence of message sizes now.
 
@@ -255,13 +268,24 @@ for i in numbers:
 This script generates 30 replications of sizes, puts it into an array
 and reproducibly shuffles it with a seed. I have used it to generate
 [[file:///random-sizes][this file]], which will be the basis for the platform calibration.
+
+I'll copy the generated file to the platform-calibration directory.
+#+BEGIN_SRC sh
+cp ./random_sizes $HOME/platform-calibration/
+#+END_SRC
 ** Execution
 To execute the /platform calibration/, I can simply use one of the
-sbatch scripts provided in the repository.
-* Misc - Ideas
-** Docker swarm vs Docker overlay network
-One possible idea to make this work richer is to test not only the two
-systems described above, but also to test the Docker containers
-connected through the overlay network *without* Docker Swarm. This
-would isolate yet another variable, as well as also providing insights
-on how introducing Docker Swarm affects network performance.
+sbatch scripts provided in the repository as templates for the
+parameters.
+
+#+BEGIN_SRC sh :session experiment
+HOSTFILE="$HOME/hosts.txt"
+FOLDER="$HOME/platform-calibration"
+DATAFOLDER=""
+
+cd $FOLDER
+mpiexec -np 2 --hostfile $HOSTFILE $FOLDER/src/calibration/calibrate -f $FOLDER/$DATAFOLDER/testplatform.xml -s $FOLDER/random_sizes
+#+END_SRC
+
+The results from the execution are CSV files for all metrics, which
+are put in the current directory.
