@@ -1,0 +1,3 @@
+[submodule "swarm/docker-cluster/project/platform-calibration"]
+	path = swarm/docker-cluster/project/platform-calibration
+	url = https://gitlab.inria.fr/simgrid/platform-calibration

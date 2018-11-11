@@ -294,4 +294,14 @@ are put in the current directory.
 To execute the same code on the Docker environment, I created a
 Dockerfile that clones, compiles and configures the execution in
 exactly the same way as done with the native execution. The Dockerfile
-can be found [[file://swarm/docker-cluster/Dockerfile][here]].
+can be found [[file://swarm/docker-cluster/Dockerfile][here]]. To avoid having to install =git= in the container, I added the =platform-calibration= project as a submodule:
+
+#+BEGIN_SRC sh
+git submodule add https://gitlab.inria.fr/simgrid/platform-calibration ./swarm/docker-cluster/project/
+#+END_SRC
+
+We can build the container image as follows:
+#+BEGIN_SRC sh
+cd swarm/docker-cluster/project
+docker build .
+#+END_SRC

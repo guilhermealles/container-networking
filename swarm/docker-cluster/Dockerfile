@@ -22,7 +22,6 @@ RUN sudo apt-get install -y libxml2-dev libxslt1-dev
 # Normal build command
 USER mpi
 
-RUN git clone https://gitlab.inria.fr/simgrid/platform-calibration.git
 RUN cd platform-calibration/src/calibration && make clean && make
 RUN cp ./random_sizes ./platform-calibration/
 ENV FOLDER /project/platform-calibration
