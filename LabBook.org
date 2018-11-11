@@ -165,10 +165,10 @@ an overlay network. I have placed the necessary scripts in the
 =swarm/= directory.
 ** DONE Test the creation of the containers
 Test the creation of containers in the Grid5000 cluster. I will use
-three nodes for this test (and for the final execution as well). One
-will be responsible for dispatching the MPI Jobs and the other two
-will execute them.
+two nodes for this test (and for the final execution as well).
 ** Creating a cluster with Docker Swarm
+<<cluster-creation>>
+*** Setup
 In this section I will describe the steps to create a cluster of
 Docker Containers using Docker Swarm inside the Grid5000
 infrastructure.
@@ -185,9 +185,9 @@ the head node. This is to ensure that all the machines in the cluster
 have the =known_hosts= file setup properly and will not prompt the
 user for a fingerprint check during experiments.
 
-Then, in the =container-networking= project directory, we need to edit
-the files that identify the hosts in the cluster. These can be found
-at =config/hosts.txt= and at =setup/swarm_hosts.txt=.
+Then, in the =container-networking= project (=swarm= directory), we
+need to edit the files that identify the hosts in the cluster. These
+can be found at =config/hosts.txt= and at =setup/swarm_hosts.txt=.
 
 The next step is to edit the swarm configuration file, which can be
 found at =docker-cluster/swarm.conf=.
@@ -199,7 +199,7 @@ docker-cluster/ssh/*=.
 
 Finally, the last step is to =docker login=, in order to be able to
 push images to the Docker registry.
-*** Summary
+**** Summary
 In a higher level, the steps that we need to take in order to setup
 the cluster are:
 
@@ -211,7 +211,27 @@ the cluster are:
  4. Fix the SSH permissions in the keys that will be passed to Docker
     containers;
  5. =docker login=.
+*** Building the cluster
+To build the cluster, we can use the helper scripts that were imported
+from the /hpc-containers/ repository. Let's first create a swarm
+containing all the nodes in our network:
+#+BEGIN_SRC sh :session init-swarm-cluster
+cd swarm
+./setup/assemble-swarm.sh create ./config/hosts.txt
+#+END_SRC
+
+Then, we will instantiate the containers for all nodes in our swarm:
+#+BEGIN_SRC sh :session init-swarm-cluster
+cd docker-cluster
+./swarm.sh up size=2
+#+END_SRC
+
+Now we can login into our cluster with
+#+BEGIN_SRC sh :session init-swarm-cluster
+./swarm.sh login
+#+END_SRC
 ** Known issues
+<<mpi-hosts-issue>>
 For some reason the containers are not being recognized by the
 =mpi_bootstrap=. It used to work in the past, but right now I do not
 have time to debug this.
@@ -311,4 +331,12 @@ Then we can build the container image as follows:
 #+BEGIN_SRC sh
 cd swarm/docker-cluster/project
 docker build .
+#+END_SRC
+** Building the cluster
+To build the cluster, we can follow the steps described [[cluster-creation][here]].
+** Executing tests
+After creating the cluster, logging into the login container, and configuring the MPI hosts file (described [[mpi-hosts-issue][here]]), we can execute the benchmark:
+#+BEGIN_SRC sh
+mpiexec -np 2 --hostfile ./hosts.txt /project/platform-calibration/src/calibration/
+calibrate -f /project/platform-calibration//testplatform.xml -s /project/platform-calibration/random_sizes
 #+END_SRC
