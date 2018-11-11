@@ -248,7 +248,8 @@ cd platform-calibration/src/calibration
 make clean
 make
 #+END_SRC
-** Customizing files*** zoo_sizes
+** Customizing files
+*** zoo_sizes
 This file contains the sizes of messages to be sent, one per line. I
 will generate a random sequence of message sizes now.
 
@@ -289,3 +290,8 @@ mpiexec -np 2 --hostfile $HOSTFILE $FOLDER/src/calibration/calibrate -f $FOLDER/
 
 The results from the execution are CSV files for all metrics, which
 are put in the current directory.
+* Container execution
+To execute the same code on the Docker environment, I created a
+Dockerfile that clones, compiles and configures the execution in
+exactly the same way as done with the native execution. The Dockerfile
+can be found [[file://swarm/docker-cluster/Dockerfile][here]].

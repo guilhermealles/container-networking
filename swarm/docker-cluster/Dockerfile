@@ -17,17 +17,16 @@ COPY ssh/* /home/mpi/.ssh/
 COPY ssh/id_rsa.pub /home/mpi/.ssh/authorized_keys
 RUN sudo chown mpi:mpi /home/mpi/.ssh
 RUN sudo chown mpi:mpi /home/mpi/.ssh/*
+RUN sudo apt-get install -y libxml2-dev libxslt1-dev
 
 # Normal build command
 USER mpi
-RUN curl https://www.nas.nasa.gov/assets/npb/NPB3.3.1.tar.gz > NPB-3.3.1.tar.gz
-RUN tar -xvzf NPB-3.3.1.tar.gz
-RUN cd NPB3.3.1/NPB3.3-MPI/ && cp config/make.def.template config/make.def 
-RUN cd NPB3.3.1/NPB3.3-MPI/ && sed -i 's/f77/mpif77/g' config/make.def
-RUN cd NPB3.3.1/NPB3.3-MPI/ && make ep CLASS=B NPROCS=1
-RUN cd NPB3.3.1/NPB3.3-MPI/ && make ep CLASS=B NPROCS=4
-RUN cd NPB3.3.1/NPB3.3-MPI/ && make ep CLASS=B NPROCS=8
-RUN cd NPB3.3.1/NPB3.3-MPI/ && make ep CLASS=B NPROCS=16
+
+RUN git clone https://gitlab.inria.fr/simgrid/platform-calibration.git
+RUN cd platform-calibration/src/calibration && make clean && make
+RUN cp ./random_sizes ./platform-calibration/
+ENV FOLDER /project/platform-calibration
+ENV DATAFOLDER ''
 
 # ####################
 # For Docker beginner:
