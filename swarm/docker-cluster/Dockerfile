@@ -15,8 +15,8 @@ COPY project/ .
 
 COPY ssh/* /home/mpi/.ssh/
 COPY ssh/id_rsa.pub /home/mpi/.ssh/authorized_keys
-RUN sudo chown mpi:mpi /home/mpi/.ssh
-RUN sudo chown mpi:mpi /home/mpi/.ssh/*
+RUN sudo chown -R mpi:mpi /home/mpi/.ssh
+RUN sudo chown -R mpi:mpi /project
 RUN sudo apt-get install -y libxml2-dev libxslt1-dev
 
 # Normal build command

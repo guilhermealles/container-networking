@@ -300,7 +300,14 @@ can be found [[file://swarm/docker-cluster/Dockerfile][here]]. To avoid having t
 git submodule add https://gitlab.inria.fr/simgrid/platform-calibration ./swarm/docker-cluster/project/
 #+END_SRC
 
-We can build the container image as follows:
+Then, to download the latest version of the submodule (when setting the experiment up in a new environment), I can do:
+#+BEGIN_SRC sh
+cd swarm/docker-cluster/project/platform-calibration
+git submodule init
+git submodule update
+#+END_SRC
+
+Then we can build the container image as follows:
 #+BEGIN_SRC sh
 cd swarm/docker-cluster/project
 docker build .
