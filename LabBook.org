@@ -13114,6 +13114,7 @@ ls
 
 Okay, now I believe we have a clean workspace to work with.
 ** PingPong analysis
+*** R analysis
 Let's start by reading the CSV file. By looking at the source code in
 the /platform-calibration/ project, I figured out that the columns in
 the CSV output file represent, respectively:
@@ -13140,7 +13141,7 @@ list.files()
 
 Ok, now let's read the PingPong files into an R dataframe. I will also
 get rid of the 'Start_Time' column, as I figure out it is not relevant
-for this analysis. In addition: the time is measured in nanoseconds. I will convert it to 
+for this analysis.
 #+BEGIN_SRC R :session pingpong-analysis :results output
 docker_pingpong <- read_csv('./docker_PingPong.csv', 
   col_names = c('Operation', 'Size', 'Start_Time', 'Time'),
@@ -13325,4 +13326,403 @@ pingpong_data.tidy %>% ggplot(aes(x = Size, y = Average_Time)) +
 
 #+RESULTS:
 [[file:ping-pong.png]]
+*** TODO Comments
+** Isend analysis
+*** R analysis
+The procedure is pretty much the same as the previous analysis. The
+structure of the csv file is the following:
 
+|-----------+------+------------+----------------|
+| Operation | Size | Start Time | Operation Time |
+|-----------+------+------------+----------------|
+
+Let's setup an R session for this analysis.
+
+#+BEGIN_SRC R :session isend-analysis :results output
+suppressMessages(library(tidyverse))
+options(crayon.enabled = FALSE)
+setwd('./analysis')
+getwd()
+list.files()
+#+END_SRC
+
+#+RESULTS:
+: [1] "/Users/alles/workspace/container-networking/analysis"
+: [1] "docker_Isend.csv"    "docker_PingPong.csv" "docker_Recv.csv"    
+: [4] "native_Isend.csv"    "native_PingPong.csv" "native_Recv.csv"    
+: [7] "ping-pong.png"
+
+Ok, now let's read the Isend files into an R dataframe. I will also
+get rid of the 'Start_Time' and 'Operation' columns, as I figure they
+are not relevant for this analysis.
+#+BEGIN_SRC R :session isend-analysis :results output
+docker_isend <- read_csv('./docker_Isend.csv', 
+  col_names = c('Operation', 'Size', 'Start_Time', 'Time'),
+  col_types = cols(
+    Operation = col_character(),
+    Size = col_integer(),
+    Start_Time = col_double(),
+    Time = col_double()
+  )) %>% 
+  mutate(Environment = 'Docker') %>%
+  select(-Start_Time, -Operation)
+docker_isend = docker_isend[,c(3,1,2)]
+
+native_isend <- read_csv('./native_Isend.csv',
+  col_names = c('Operation', 'Size', 'Start_Time', 'Time'),
+  col_types = cols(
+    Operation = col_character(),
+    Size = col_integer(),
+    Start_Time = col_double(),
+    Time = col_double()
+  )) %>%
+  mutate(Environment = 'Native') %>%
+  select(-Start_Time, -Operation)
+native_isend = native_isend[,c(3,1,2)]
+
+isend_data <- bind_rows(docker_isend, native_isend)
+isend_data
+#+END_SRC
+
+#+RESULTS:
+#+begin_example
+# A tibble: 12,600 x 3
+   Environment   Size      Time
+   <chr>        <int>     <dbl>
+ 1 Docker      524288 0.0000312
+ 2 Docker      524288 0.0000291
+ 3 Docker      524288 0.0000296
+ 4 Docker      524288 0.0000287
+ 5 Docker      524288 0.0000346
+ 6 Docker      524288 0.0000288
+ 7 Docker      524288 0.0000334
+ 8 Docker      524288 0.0000290
+ 9 Docker      524288 0.0000290
+10 Docker      524288 0.0000291
+# ... with 12,590 more rows
+#+end_example
+
+For presentation convenience, let's convert the times from ns to ps
+#+BEGIN_SRC R :session isend-analysis :results output
+isend_data.ps <- isend_data %>% 
+  mutate(Total_Time = Time * 1000) %>%
+  select(-Time)
+
+isend_data.ps
+#+END_SRC
+
+#+RESULTS:
+#+begin_example
+# A tibble: 12,600 x 3
+   Environment   Size Total_Time
+   <chr>        <int>      <dbl>
+ 1 Docker      524288     0.0312
+ 2 Docker      524288     0.0291
+ 3 Docker      524288     0.0296
+ 4 Docker      524288     0.0287
+ 5 Docker      524288     0.0346
+ 6 Docker      524288     0.0288
+ 7 Docker      524288     0.0334
+ 8 Docker      524288     0.0290
+ 9 Docker      524288     0.0290
+10 Docker      524288     0.0291
+# ... with 12,590 more rows
+#+end_example
+
+Let's now summarize the values and calculate the mean and standard
+deviation.
+#+BEGIN_SRC R :session isend-analysis :results output
+isend_data.tidy <- isend_data.ps %>%
+  group_by(Environment, Size) %>%
+  summarize(
+    Sample_Size = n(),
+    Average_Time = mean(Total_Time),
+    Std_Deviation = sd(Total_Time),
+    Std_Error = 3*Std_Deviation/sqrt(Sample_Size)) %>%
+  ungroup()
+isend_data.tidy %>% as.data.frame
+#+END_SRC
+
+#+RESULTS:
+#+begin_example
+   Environment    Size Sample_Size Average_Time Std_Deviation    Std_Error
+1       Docker       1         300  0.030807490  0.0009280698 1.607464e-04
+2       Docker       2         300  0.031034707  0.0018538687 3.210995e-04
+3       Docker       4         300  0.030967007  0.0011331400 1.962656e-04
+4       Docker       8         300  0.030900533  0.0010503401 1.819242e-04
+5       Docker      16         300  0.031240993  0.0015433981 2.673244e-04
+6       Docker      32         300  0.031323160  0.0009531780 1.650953e-04
+7       Docker      64         300  0.031906083  0.0013415147 2.323572e-04
+8       Docker     128         300  0.032635193  0.0007913047 1.370580e-04
+9       Docker     256         300  0.034549680  0.0017922555 3.104278e-04
+10      Docker     512         300  0.037777843  0.0010844685 1.878355e-04
+11      Docker    1024         300  0.044272970  0.0013190534 2.284668e-04
+12      Docker    2048         300  0.064042247  0.0017187203 2.976911e-04
+13      Docker    4096         300  0.101144707  0.0021170774 3.666886e-04
+14      Docker    8192         300  0.171175600  0.0025414940 4.401997e-04
+15      Docker   16384         300  0.303808357  0.0034446135 5.966246e-04
+16      Docker   32768         300  0.580006363  0.0044559939 7.718008e-04
+17      Docker   65536         300  1.151378330  0.0074991853 1.298897e-03
+18      Docker  131072         300  0.029096600  0.0015030307 2.603326e-04
+19      Docker  262144         300  0.029437010  0.0015379875 2.663872e-04
+20      Docker  524288         300  0.030182280  0.0021364327 3.700410e-04
+21      Docker 1048576         300  0.029848650  0.0019804149 3.430179e-04
+22      Native       1         300  0.006866413  0.0005585206 9.673860e-05
+23      Native       2         300  0.006861780  0.0004197864 7.270913e-05
+24      Native       4         300  0.006934970  0.0005302026 9.183378e-05
+25      Native       8         300  0.006874213  0.0003663930 6.346113e-05
+26      Native      16         300  0.006826703  0.0005323208 9.220067e-05
+27      Native      32         300  0.006847090  0.0003751739 6.498203e-05
+28      Native      64         300  0.006881213  0.0004020315 6.963389e-05
+29      Native     128         300  0.006929500  0.0005924037 1.026073e-04
+30      Native     256         300  0.006924473  0.0003904858 6.763412e-05
+31      Native     512         300  0.006976540  0.0004210856 7.293416e-05
+32      Native    1024         300  0.006987913  0.0003950579 6.842604e-05
+33      Native    2048         300  0.007415420  0.0004296682 7.442072e-05
+34      Native    4096         300  0.007728693  0.0005219031 9.039627e-05
+35      Native    8192         300  0.008468230  0.0007585359 1.313823e-04
+36      Native   16384         300  0.009192730  0.0007578469 1.312629e-04
+37      Native   32768         300  0.010613763  0.0005518396 9.558143e-05
+38      Native   65536         300  0.014345317  0.0005543224 9.601146e-05
+39      Native  131072         300  0.007349470  0.0005569956 9.647446e-05
+40      Native  262144         300  0.007644317  0.0002932920 5.079966e-05
+41      Native  524288         300  0.007847643  0.0005667108 9.815720e-05
+42      Native 1048576         300  0.007883503  0.0003236693 5.606117e-05
+#+end_example
+
+Looking good. Let's plot.
+#+BEGIN_SRC R :session isend-analysis :results output graphics :file isend.png :exports both :width 700 :height 300
+plot_theme <- function() {
+  ret <- list();
+  ret[[length(ret)+1]] <- theme (
+    plot.margin = unit(c(0,0,0,0), "cm"),
+    legend.spacing = unit(1, "mm"),
+    legend.position = "top",
+    legend.justification = "left",
+    legend.box.spacing = unit(2, "pt"),
+    legend.box.margin = margin(0,0,0,0),
+    legend.title = element_blank());
+  return(ret)
+}
+
+isend_data.tidy %>% ggplot(aes(x = Size, y = Average_Time)) +
+  geom_line(aes(col = Environment), alpha = 0.4) +
+  geom_point(aes(col = Environment)) +
+  geom_errorbar(
+    aes(
+      ymin=Average_Time-Std_Error, 
+      ymax=Average_Time + Std_Error, 
+      color=Environment, 
+      group=Environment),
+    width = 0.6) +
+  scale_y_continuous(trans='log2') +
+  scale_x_continuous(trans='log2') +
+  ylab('Average time(ps)') +
+  xlab('Message size(bytes)') +
+  theme_bw() + 
+  plot_theme()
+#+END_SRC
+
+#+RESULTS:
+[[file:isend.png]]
+*** TODO Comments
+** Recv analysis
+*** R analysis
+The procedure is pretty much the same as the previous analysis. The
+structure of the csv file is the following:
+
+|-----------+------+------------+----------------|
+| Operation | Size | Start Time | Operation Time |
+|-----------+------+------------+----------------|
+
+Let's setup an R session for this analysis.
+
+#+BEGIN_SRC R :session recv-analysis :results output
+suppressMessages(library(tidyverse))
+options(crayon.enabled = FALSE)
+setwd('./analysis')
+getwd()
+list.files()
+#+END_SRC
+
+#+RESULTS:
+: [1] "/Users/alles/workspace/container-networking/analysis"
+: [1] "docker_Isend.csv"    "docker_PingPong.csv" "docker_Recv.csv"    
+: [4] "isend.png"           "native_Isend.csv"    "native_PingPong.csv"
+: [7] "native_Recv.csv"     "ping-pong.png"
+
+Ok, now let's read the Recv files into an R dataframe. I will also
+get rid of the 'Start_Time' and 'Operation' columns, as I figure they
+are not relevant for this analysis.
+#+BEGIN_SRC R :session recv-analysis :results output
+docker_recv <- read_csv('./docker_Recv.csv', 
+  col_names = c('Operation', 'Size', 'Start_Time', 'Time'),
+  col_types = cols(
+    Operation = col_character(),
+    Size = col_integer(),
+    Start_Time = col_double(),
+    Time = col_double()
+  )) %>% 
+  mutate(Environment = 'Docker') %>%
+  select(-Start_Time, -Operation)
+docker_recv = docker_recv[,c(3,1,2)]
+
+native_recv <- read_csv('./native_Recv.csv',
+  col_names = c('Operation', 'Size', 'Start_Time', 'Time'),
+  col_types = cols(
+    Operation = col_character(),
+    Size = col_integer(),
+    Start_Time = col_double(),
+    Time = col_double()
+  )) %>%
+  mutate(Environment = 'Native') %>%
+  select(-Start_Time, -Operation)
+native_recv = native_recv[,c(3,1,2)]
+
+recv_data <- bind_rows(docker_recv, native_recv)
+recv_data
+#+END_SRC
+
+#+RESULTS:
+#+begin_example
+# A tibble: 12,600 x 3
+   Environment   Size   Time
+   <chr>        <int>  <dbl>
+ 1 Docker      524288 0.0124
+ 2 Docker      524288 0.0121
+ 3 Docker      524288 0.0113
+ 4 Docker      524288 0.0150
+ 5 Docker      524288 0.0117
+ 6 Docker      524288 0.0196
+ 7 Docker      524288 0.0116
+ 8 Docker      524288 0.0116
+ 9 Docker      524288 0.0117
+10 Docker      524288 0.0115
+# ... with 12,590 more rows
+#+end_example
+
+For presentation consistency, let's convert the times from ns to ps
+#+BEGIN_SRC R :session recv-analysis :results output
+recv_data.ps <- recv_data %>% 
+  mutate(Total_Time = Time * 1000) %>%
+  select(-Time)
+
+recv_data.ps
+#+END_SRC
+
+#+RESULTS:
+#+begin_example
+# A tibble: 12,600 x 3
+   Environment   Size Total_Time
+   <chr>        <int>      <dbl>
+ 1 Docker      524288       12.4
+ 2 Docker      524288       12.1
+ 3 Docker      524288       11.3
+ 4 Docker      524288       15.0
+ 5 Docker      524288       11.7
+ 6 Docker      524288       19.6
+ 7 Docker      524288       11.6
+ 8 Docker      524288       11.6
+ 9 Docker      524288       11.7
+10 Docker      524288       11.5
+# ... with 12,590 more rows
+#+end_example
+
+Let's now summarize the values and calculate the mean and standard
+deviation.
+#+BEGIN_SRC R :session recv-analysis :results output
+recv_data.tidy <- recv_data.ps %>%
+  group_by(Environment, Size) %>%
+  summarize(
+    Sample_Size = n(),
+    Average_Time = mean(Total_Time),
+    Std_Deviation = sd(Total_Time),
+    Std_Error = 3*Std_Deviation/sqrt(Sample_Size)) %>%
+  ungroup()
+recv_data.tidy %>% as.data.frame
+#+END_SRC
+
+#+RESULTS:
+#+begin_example
+   Environment    Size Sample_Size Average_Time Std_Deviation    Std_Error
+1       Docker       1         300   0.02036099   0.002192771 0.0003797991
+2       Docker       2         300   0.02036712   0.002039662 0.0003532798
+3       Docker       4         300   0.01978594   0.003017642 0.0005226709
+4       Docker       8         300   0.02043160   0.002326466 0.0004029558
+5       Docker      16         300   0.01964393   0.003257196 0.0005641628
+6       Docker      32         300   0.01984491   0.003456067 0.0005986083
+7       Docker      64         300   0.01904631   0.004304795 0.0007456124
+8       Docker     128         300   0.02009240   0.003426159 0.0005934282
+9       Docker     256         300   0.02012841   0.003454379 0.0005983160
+10      Docker     512         300   0.02100340   0.002252835 0.0003902026
+11      Docker    1024         300   0.03326465   0.005445284 0.0009431509
+12      Docker    2048         300   0.09082613   0.007139697 0.0012366319
+13      Docker    4096         300   0.09146342   0.009445470 0.0016360033
+14      Docker    8192         300   0.08588292   0.020345655 0.0035239708
+15      Docker   16384         300   0.09194640   0.015625557 0.0027064259
+16      Docker   32768         300   0.10180411   0.008757804 0.0015168962
+17      Docker   65536         300   0.10248019   0.016512449 0.0028600401
+18      Docker  131072         300   3.00624160   0.051595945 0.0089366799
+19      Docker  262144         300   5.77068517   0.091859412 0.0159105169
+20      Docker  524288         300  11.44462193   0.687752801 0.1191222794
+21      Docker 1048576         300  22.76134133   0.831580831 0.1440340249
+22      Native       1         300   0.01293761   0.004097608 0.0007097265
+23      Native       2         300   0.01262896   0.003987270 0.0006906155
+24      Native       4         300   0.01265925   0.004176426 0.0007233783
+25      Native       8         300   0.01324341   0.004052354 0.0007018883
+26      Native      16         300   0.01225018   0.005051688 0.0008749780
+27      Native      32         300   0.01395299   0.004957242 0.0008586196
+28      Native      64         300   0.01440204   0.003384553 0.0005862217
+29      Native     128         300   0.01339697   0.004172983 0.0007227819
+30      Native     256         300   0.01336736   0.003957737 0.0006855001
+31      Native     512         300   0.01269491   0.004462025 0.0007728454
+32      Native    1024         300   0.02036197   0.008046022 0.0013936119
+33      Native    2048         300   0.03053450   0.009242513 0.0016008502
+34      Native    4096         300   0.12753131   0.107862410 0.0186823174
+35      Native    8192         300   0.18378326   0.133157677 0.0230635861
+36      Native   16384         300   0.05422644   0.043745351 0.0075769171
+37      Native   32768         300   0.05994397   0.030299631 0.0052480500
+38      Native   65536         300   0.05590649   0.025632981 0.0044397625
+39      Native  131072         300   1.30632417   0.067492577 0.0116900572
+40      Native  262144         300   2.47607592   0.069827077 0.0120944046
+41      Native  524288         300   4.72250921   0.076519589 0.0132535817
+42      Native 1048576         300   9.20183131   0.085851900 0.0148699852
+#+end_example
+
+Looking good. Let's plot.
+#+BEGIN_SRC R :session recv-analysis :results output graphics :file recv.png :exports both :width 700 :height 300
+plot_theme <- function() {
+  ret <- list();
+  ret[[length(ret)+1]] <- theme (
+    plot.margin = unit(c(0,0,0,0), "cm"),
+    legend.spacing = unit(1, "mm"),
+    legend.position = "top",
+    legend.justification = "left",
+    legend.box.spacing = unit(2, "pt"),
+    legend.box.margin = margin(0,0,0,0),
+    legend.title = element_blank());
+  return(ret)
+}
+
+recv_data.tidy %>% ggplot(aes(x = Size, y = Average_Time)) +
+  geom_line(aes(col = Environment), alpha = 0.4) +
+  geom_point(aes(col = Environment)) +
+  geom_errorbar(
+    aes(
+      ymin=Average_Time-Std_Error, 
+      ymax=Average_Time + Std_Error, 
+      color=Environment, 
+      group=Environment),
+    width = 0.6) +
+  scale_y_continuous(trans='log2') +
+  scale_x_continuous(trans='log2') +
+  ylab('Average time(ps)') +
+  xlab('Message size(bytes)') +
+  theme_bw() + 
+  plot_theme()
+#+END_SRC
+
+#+RESULTS:
+[[file:recv.png]]
+
+*** TODO Comments
