@@ -13326,7 +13326,16 @@ pingpong_data.tidy %>% ggplot(aes(x = Size, y = Average_Time)) +
 
 #+RESULTS:
 [[file:ping-pong.png]]
-*** TODO Comments
+*** Comments
+The PingPong time with Docker is consistently slower than its
+counterpart in the native environment.
+
+Between 4KB and 8KB sizes, the performance of both solutions get
+actually pretty close. This behaviour was already observed in the
+previous work that I did on containers for HPC, which can be found
+[[https://github.com/guilhermealles/hpc-containers][here]].
+
+The gap widens again after the 8KB message size.
 ** Isend analysis
 *** R analysis
 The procedure is pretty much the same as the previous analysis. The
@@ -13525,7 +13534,24 @@ isend_data.tidy %>% ggplot(aes(x = Size, y = Average_Time)) +
 
 #+RESULTS:
 [[file:isend.png]]
-*** TODO Comments
+*** Comments
+Once again, the performance of the Docker environment is affected
+across all the test cases, and this time the difference is consistent
+in every scenario.
+
+There is some weird behaviour, though, which is pretty clear in the
+chart. The execution time of the =Isend= directive increases with the
+message size, until it hits the size of 64KB. After that, the
+execution time of =Isend= goes down considerably (pretty close to
+where it was when the message size was of just 1B), and it maintains
+this execution time pretty much all across. 
+
+I wonder if this is the behaviour Lucas told me about, in which MPI
+messages are sent synchronously regardless of the directive used
+(=Isend= is supposed to be asynchronous). It makes sense... Then, when
+the overhead of sending data synchronously is way too high (which, in
+this case, is around 128KB), MPI falls back to the asynchronous
+approach.
 ** Recv analysis
 *** R analysis
 The procedure is pretty much the same as the previous analysis. The
@@ -13725,4 +13751,10 @@ recv_data.tidy %>% ggplot(aes(x = Size, y = Average_Time)) +
 #+RESULTS:
 [[file:recv.png]]
 
-*** TODO Comments
+*** Comments
+This is not a trivial plot... Once again, the Docker environment
+performs worse pretty much all across. However, it outperforms the
+native environment by a significant margin for message sizes of 4K and
+8K. This is the same range in which the PingPong measurement of both
+environments get really close, and now I can see that the =MPI_Recv=
+operation is the one that has this odd behaviour.
