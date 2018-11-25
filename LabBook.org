@@ -449,7 +449,7 @@ All set.I suspect that the measurements from /graphene-97/ and
 are the same as well. Before moving on, let's check if that is the
 case.
 
-#+BEGIN_SRC bash :session performance-analysis :results output :exports both
+#+BEGIN_SRC bash :session performance-analysis :results output
 diff docker_1_Isend.csv docker_2_Isend.csv
 #+END_SRC
 
@@ -6761,7 +6761,7 @@ diff docker_1_Isend.csv docker_2_Isend.csv
 Okay, the files are different. Let's just make one last check to see
 if they are not simply inverted (Isend and Recvs):
 
-#+BEGIN_SRC bash :session performance-analysis :results output :exports both
+#+BEGIN_SRC bash :session performance-analysis :results output
 cat docker_1_Isend.csv | sort > tmp-1-sorted.csv
 cat docker_2_Isend.csv | sort > tmp-2-sorted.csv
 diff tmp-1-sorted.csv tmp-2-sorted.csv
