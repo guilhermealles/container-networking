@@ -137,7 +137,7 @@ applications.
 The following code should generate all the levels for the message size
 factor.
 
-#+BEGIN_SRC R :session r :exports both
+#+BEGIN_SRC R :session r :results output :exports both
 gigabyte <- 1024*1024*1024
 seq(4, gigabyte, 4)
 #+END_SRC
@@ -215,19 +215,19 @@ the cluster are:
 To build the cluster, we can use the helper scripts that were imported
 from the /hpc-containers/ repository. Let's first create a swarm
 containing all the nodes in our network:
-#+BEGIN_SRC sh :session init-swarm-cluster
+#+BEGIN_SRC sh :session init-swarm-cluster :results output :exports both
 cd swarm
 ./setup/assemble-swarm.sh create ./config/hosts.txt
 #+END_SRC
 
 Then, we will instantiate the containers for all nodes in our swarm:
-#+BEGIN_SRC sh :session init-swarm-cluster
+#+BEGIN_SRC sh :session init-swarm-cluster :results output :exports both
 cd docker-cluster
 ./swarm.sh up size=2
 #+END_SRC
 
 Now we can login into our cluster with
-#+BEGIN_SRC sh :session init-swarm-cluster
+#+BEGIN_SRC sh :session init-swarm-cluster :results output :exports both
 ./swarm.sh login
 #+END_SRC
 ** Known issues
@@ -249,7 +249,7 @@ the repository and create some configuration files. Then, I'll connect
 to Grid5000 and apply these changes in order to attempt an execution.
 ** Clone the repository
 The first step is to clone the /platform calibration/ repository:
-#+BEGIN_SRC sh :session experiment
+#+BEGIN_SRC sh :session experiment :results output :exports both
 cd $HOME
 git clone https://gitlab.inria.fr/simgrid/platform-calibration.git
 #+END_SRC
@@ -258,12 +258,12 @@ git clone https://gitlab.inria.fr/simgrid/platform-calibration.git
 In order to compile the /platform calibration/ project, I need to
 install some libraries that are not default in my /graphene/ image. I
 can do that with:
-#+BEGIN_SRC sh :session experiment
+#+BEGIN_SRC sh :session experiment :results output :exports both
 sudo apt-get install -y libxml2-dev libxslt1-dev
 #+END_SRC
 
 Compiling the source...
-#+BEGIN_SRC sh :session experiment
+#+BEGIN_SRC sh :session experiment :results output :exports both
 cd platform-calibration/src/calibration
 make clean
 make
@@ -291,7 +291,7 @@ and reproducibly shuffles it with a seed. I have used it to generate
 [[file:///random-sizes][this file]], which will be the basis for the platform calibration.
 
 I'll copy the generated file to the platform-calibration directory.
-#+BEGIN_SRC sh
+#+BEGIN_SRC sh :results output :exports both
 cp ./random_sizes $HOME/platform-calibration/
 #+END_SRC
 ** Execution
@@ -299,7 +299,7 @@ To execute the /platform calibration/, I can simply use one of the
 sbatch scripts provided in the repository as templates for the
 parameters.
 
-#+BEGIN_SRC sh :session experiment
+#+BEGIN_SRC sh :session experiment :results output :exports both
 HOSTFILE="$HOME/hosts.txt"
 FOLDER="$HOME/platform-calibration"
 DATAFOLDER=""
@@ -316,20 +316,20 @@ Dockerfile that clones, compiles and configures the execution in
 exactly the same way as done with the native execution. The Dockerfile
 can be found [[file://swarm/docker-cluster/Dockerfile][here]]. To avoid having to install =git= in the container, I added the =platform-calibration= project as a submodule:
 
-#+BEGIN_SRC sh
+#+BEGIN_SRC sh :results output :exports both
 git submodule add https://gitlab.inria.fr/simgrid/platform-calibration ./swarm/docker-cluster/project/
 #+END_SRC
 
 Then, to download the latest version of the submodule (when setting
 the experiment up in a new environment), I can do:
-#+BEGIN_SRC sh
+#+BEGIN_SRC sh :results output :exports both
 cd swarm/docker-cluster/project/platform-calibration
 git submodule init
 git submodule update
 #+END_SRC
 
 Then we can build the container image as follows:
-#+BEGIN_SRC sh
+#+BEGIN_SRC sh :results output :exports both
 cd swarm/docker-cluster/project
 docker build .
 #+END_SRC
@@ -339,7 +339,7 @@ To build the cluster, we can follow the steps described [[cluster-creation][here
 After creating the cluster, logging into the login container, and
 configuring the MPI hosts file (described [[mpi-hosts-issue][here]]), we can execute the
 benchmark:
-#+BEGIN_SRC sh
+#+BEGIN_SRC sh :results output :exports both
 mpiexec -np 2 --hostfile ./hosts.txt /project/platform-calibration/src/calibration/
 calibrate -f /project/platform-calibration//testplatform.xml -s /project/platform-calibration/random_sizes
 #+END_SRC
@@ -353,7 +353,7 @@ Right now we have the results for both the native and container
 execution. They are organized in the results directory. Let's take a
 look.
 
-#+BEGIN_SRC bash :session performance-analysis
+#+BEGIN_SRC bash :session performance-analysis :exports both
 find results
 #+END_SRC
 
@@ -396,7 +396,7 @@ Okay. From the listed files, the ones that are important are
 /calibration_PingPong/. Let's create a workspace to work with these
 files:
 
-#+BEGIN_SRC bash :session performance-analysis :results output
+#+BEGIN_SRC bash :session performance-analysis :results output :exports both
 mkdir analysis
 cp results/docker/container-1/calibration_Isend.csv analysis/docker_1_Isend.csv
 cp results/docker/container-1/calibration_Recv.csv analysis/docker_1_Recv.csv
@@ -437,7 +437,7 @@ analysis/native_2_Recv.csv
 #+end_example
 
 Let's check we are in the right place
-#+BEGIN_SRC bash :session performance-analysis
+#+BEGIN_SRC bash :session performance-analysis :exports both
 pwd
 #+END_SRC
 
@@ -449,7 +449,7 @@ All set.I suspect that the measurements from /graphene-97/ and
 are the same as well. Before moving on, let's check if that is the
 case.
 
-#+BEGIN_SRC bash :session performance-analysis :results output
+#+BEGIN_SRC bash :session performance-analysis :results output :exports both
 diff docker_1_Isend.csv docker_2_Isend.csv
 #+END_SRC
 
@@ -6761,7 +6761,7 @@ diff docker_1_Isend.csv docker_2_Isend.csv
 Okay, the files are different. Let's just make one last check to see
 if they are not simply inverted (Isend and Recvs):
 
-#+BEGIN_SRC bash :session performance-analysis :results output
+#+BEGIN_SRC bash :session performance-analysis :results output :exports both
 cat docker_1_Isend.csv | sort > tmp-1-sorted.csv
 cat docker_2_Isend.csv | sort > tmp-2-sorted.csv
 diff tmp-1-sorted.csv tmp-2-sorted.csv
@@ -13084,7 +13084,7 @@ big. It actually makes sense, since the measurements were only taken
 in one of the two hosts (how silly of me). Let's remove the empty
 files and rename the remaining ones.
 
-#+BEGIN_SRC bash :session performance-analysis :results output
+#+BEGIN_SRC bash :session performance-analysis :results output :exports both
 rm *_2_*
 mv docker_1_Isend.csv docker_Isend.csv
 mv docker_1_PingPong.csv docker_PingPong.csv
@@ -13104,7 +13104,7 @@ mv native_1_Recv.csv native_Recv.csv
 : mv: native_1_Recv.csv: No such file or directory
 
 Let's check the results
-#+BEGIN_SRC bash :session performance-analysis :results output
+#+BEGIN_SRC bash :session performance-analysis :results output :exports both
 ls
 #+END_SRC
 
@@ -13125,7 +13125,7 @@ the CSV output file represent, respectively:
 
 Let's setup an R session for this analysis.
 
-#+BEGIN_SRC R :session pingpong-analysis :results output
+#+BEGIN_SRC R :session pingpong-analysis :results output :exports both
 suppressMessages(library(tidyverse))
 options(crayon.enabled = FALSE)
 setwd('./analysis')
@@ -13142,7 +13142,7 @@ list.files()
 Ok, now let's read the PingPong files into an R dataframe. I will also
 get rid of the 'Start_Time' column, as I figure out it is not relevant
 for this analysis.
-#+BEGIN_SRC R :session pingpong-analysis :results output
+#+BEGIN_SRC R :session pingpong-analysis :results output :exports both
 docker_pingpong <- read_csv('./docker_PingPong.csv', 
   col_names = c('Operation', 'Size', 'Start_Time', 'Time'),
   col_types = cols(
@@ -13176,7 +13176,7 @@ By looking at the source code, I realized that the total time of one
 ping-pong is equal to the =MPI_Send= plus the =MPI_Recv= time. Since
 this is the metric that I want for this test, I will aggregate both
 times by adding them up.
-#+BEGIN_SRC R :session pingpong-analysis :results output
+#+BEGIN_SRC R :session pingpong-analysis :results output :exports both
 pingpong_data.aggregated <- pingpong_data %>% 
   mutate(dummy = rep(x = seq(from = 1, to = nrow(pingpong_data)/2), each = 2)) %>%
   group_by(Environment, Size, dummy) %>%
@@ -13205,7 +13205,7 @@ pingpong_data.aggregated
 #+end_example
 
 For presentation convenience, let's convert the times from ns to ps
-#+BEGIN_SRC R :session pingpong-analysis :results output
+#+BEGIN_SRC R :session pingpong-analysis :results output :exports both
 pingpong_data.aggregated.ps <- pingpong_data.aggregated %>% 
   mutate(Total_Time = Total_Time * 1000)
 
@@ -13232,7 +13232,7 @@ pingpong_data.aggregated.ps
 
 Let's now summarize the values and calculate the mean and standard
 deviation.
-#+BEGIN_SRC R :session pingpong-analysis :results output
+#+BEGIN_SRC R :session pingpong-analysis :results output :exports both
 pingpong_data.tidy <- pingpong_data.aggregated.ps %>%
   group_by(Environment, Size) %>%
   summarize(
@@ -13347,7 +13347,7 @@ structure of the csv file is the following:
 
 Let's setup an R session for this analysis.
 
-#+BEGIN_SRC R :session isend-analysis :results output
+#+BEGIN_SRC R :session isend-analysis :results output :exports both
 suppressMessages(library(tidyverse))
 options(crayon.enabled = FALSE)
 setwd('./analysis')
@@ -13364,7 +13364,7 @@ list.files()
 Ok, now let's read the Isend files into an R dataframe. I will also
 get rid of the 'Start_Time' and 'Operation' columns, as I figure they
 are not relevant for this analysis.
-#+BEGIN_SRC R :session isend-analysis :results output
+#+BEGIN_SRC R :session isend-analysis :results output :exports both
 docker_isend <- read_csv('./docker_Isend.csv', 
   col_names = c('Operation', 'Size', 'Start_Time', 'Time'),
   col_types = cols(
@@ -13412,7 +13412,7 @@ isend_data
 #+end_example
 
 For presentation convenience, let's convert the times from ns to ps
-#+BEGIN_SRC R :session isend-analysis :results output
+#+BEGIN_SRC R :session isend-analysis :results output :exports both
 isend_data.ps <- isend_data %>% 
   mutate(Total_Time = Time * 1000) %>%
   select(-Time)
@@ -13440,7 +13440,7 @@ isend_data.ps
 
 Let's now summarize the values and calculate the mean and standard
 deviation.
-#+BEGIN_SRC R :session isend-analysis :results output
+#+BEGIN_SRC R :session isend-analysis :results output :exports both
 isend_data.tidy <- isend_data.ps %>%
   group_by(Environment, Size) %>%
   summarize(
@@ -13563,7 +13563,7 @@ structure of the csv file is the following:
 
 Let's setup an R session for this analysis.
 
-#+BEGIN_SRC R :session recv-analysis :results output
+#+BEGIN_SRC R :session recv-analysis :results output :exports both
 suppressMessages(library(tidyverse))
 options(crayon.enabled = FALSE)
 setwd('./analysis')
@@ -13580,7 +13580,7 @@ list.files()
 Ok, now let's read the Recv files into an R dataframe. I will also
 get rid of the 'Start_Time' and 'Operation' columns, as I figure they
 are not relevant for this analysis.
-#+BEGIN_SRC R :session recv-analysis :results output
+#+BEGIN_SRC R :session recv-analysis :results output :exports both
 docker_recv <- read_csv('./docker_Recv.csv', 
   col_names = c('Operation', 'Size', 'Start_Time', 'Time'),
   col_types = cols(
@@ -13628,7 +13628,7 @@ recv_data
 #+end_example
 
 For presentation consistency, let's convert the times from ns to ps
-#+BEGIN_SRC R :session recv-analysis :results output
+#+BEGIN_SRC R :session recv-analysis :results output :exports both
 recv_data.ps <- recv_data %>% 
   mutate(Total_Time = Time * 1000) %>%
   select(-Time)
@@ -13656,7 +13656,7 @@ recv_data.ps
 
 Let's now summarize the values and calculate the mean and standard
 deviation.
-#+BEGIN_SRC R :session recv-analysis :results output
+#+BEGIN_SRC R :session recv-analysis :results output :exports both
 recv_data.tidy <- recv_data.ps %>%
   group_by(Environment, Size) %>%
   summarize(
